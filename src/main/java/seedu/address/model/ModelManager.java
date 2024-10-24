@@ -7,10 +7,15 @@ import java.nio.file.Path;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
 
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.commons.core.LogsCenter;
+import seedu.address.logic.commands.Command;
+import seedu.address.logic.commands.CommandResult;
+import seedu.address.logic.commands.exceptions.CommandException;
+import seedu.address.model.log.Log;
 import seedu.address.model.person.IdentityNumber;
 import seedu.address.model.person.Person;
 
@@ -24,6 +29,13 @@ public class ModelManager implements Model {
     private final UserPrefs userPrefs;
     private final FilteredList<Person> filteredPersons;
 
+    // FilteredLogs should be final? Note that it is not initalised,
+    // may cause run time error. TODO: Improve on stability
+    private FilteredList<Log> filteredLogs;
+
+    // Dangerous, find a better way to implement this.
+    private Command savedCommand = null;
+
     /**
      * Initializes a ModelManager with the given addressBook and userPrefs.
      */
@@ -34,7 +46,7 @@ public class ModelManager implements Model {
 
         this.addressBook = new AddressBook(addressBook);
         this.userPrefs = new UserPrefs(userPrefs);
-        filteredPersons = new FilteredList<>(this.addressBook.getPersonList());
+        filteredPersons = new FilteredList<>(this.addressBook.getPersonList());;
     }
 
     public ModelManager() {
@@ -123,10 +135,24 @@ public class ModelManager implements Model {
         return filteredPersons;
     }
 
+    /**
+     * Returns an unmodifiable view of the list of {@code Log} backed by the internal list of
+     * {@code versionedAddressBook}
+     */
+    @Override
+    public ObservableList<Log> getFilteredLogList() {
+        return filteredLogs;
+    }
+
     @Override
     public void updateFilteredPersonList(Predicate<Person> predicate) {
         requireNonNull(predicate);
         filteredPersons.setPredicate(predicate);
+    }
+    @Override
+    public void updateFilteredLogList(Predicate<Log> predicate) {
+        requireNonNull(predicate);
+        filteredLogs.setPredicate(predicate);
     }
 
     /**
@@ -135,10 +161,74 @@ public class ModelManager implements Model {
      * @param identityNumber
      */
     @Override
-    public void updateFilteredLogsListById(IdentityNumber identityNumber) {
+    public void updateFilteredPersonListById(IdentityNumber identityNumber) {
         requireNonNull(identityNumber);
         Predicate<Person> predicate = person -> person.getIdentityNumber().equals(identityNumber);
         updateFilteredPersonList(predicate);
+    }
+
+    /**
+     * Updates logs list to show logs identified by the given {@code identityNumber}.
+     *
+     * @param identityNumber
+     */
+    public void updateFilteredLogListById(IdentityNumber identityNumber) {
+        requireNonNull(identityNumber);
+
+        // Get the person with matching identity number
+        updateFilteredPersonListById(identityNumber);
+        Person targetPerson = filteredPersons.get(0);
+
+        // Convert Set<Log> to an ObservableList<Log>
+        ObservableList<Log> loglist = FXCollections.observableArrayList(targetPerson.getLogs());
+
+        // Update the FilteredLogs to the logs of the targetPerson
+        filteredLogs = new FilteredList<>(loglist);
+    }
+
+    //===============Saved Commands=====================================================================================
+
+    /**
+     * Sets the saved command in the model.
+     *
+     * @param command The command to be saved.
+     */
+    @Override
+    public void setSavedCommand(Command command) {
+        this.savedCommand = command;
+    }
+
+    /**
+     * Returns true if there is a saved command in the model.
+     */
+    @Override
+    public boolean hasSavedCommand() {
+        return this.savedCommand != null;
+    }
+
+    /**
+     * Clears the saved command in the model.
+     */
+    @Override
+    public void clearSavedCommand() {
+        this.savedCommand = null;
+    }
+
+    /**
+     * Executes the saved command in the model.
+     *
+     * @return The result of the command execution.
+     * @throws CommandException If saved command does not exist or error occurs during command execution.
+     */
+    @Override
+    public CommandResult executeSavedCommand() throws CommandException {
+        if (!hasSavedCommand()) {
+            clearSavedCommand();
+            throw new CommandException("No command to confirm.");
+        }
+        CommandResult result = this.savedCommand.execute(this);
+        clearSavedCommand();
+        return result;
     }
 
     @Override
