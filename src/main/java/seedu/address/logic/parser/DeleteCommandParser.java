@@ -21,7 +21,7 @@ public class DeleteCommandParser implements Parser<DeleteCommand> {
     public DeleteCommand parse(String args) throws ParseException {
         // Use the identity number prefix to tokenize the arguments
         ArgumentMultimap argMultimap = ArgumentTokenizer.tokenize(args, PREFIX_IDENTITY_NUMBER);
-
+        argMultimap.verifyNoDuplicatePrefixesFor(PREFIX_IDENTITY_NUMBER);
         if (argMultimap.getValue(PREFIX_IDENTITY_NUMBER).isPresent()) {
             // Use IdentityNumber class to parse the identity number
             IdentityNumber identityNumber = ParserUtil.parseIdentityNumber(
