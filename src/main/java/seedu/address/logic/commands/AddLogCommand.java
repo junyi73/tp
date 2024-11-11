@@ -2,9 +2,7 @@ package seedu.address.logic.commands;
 
 import static java.util.Objects.requireNonNull;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import seedu.address.commons.util.ToStringBuilder;
 import seedu.address.logic.commands.exceptions.CommandException;
@@ -22,13 +20,16 @@ public class AddLogCommand extends Command {
 
     public static final String MESSAGE_USAGE = COMMAND_WORD
             + ": Adds a log to the person identified by the Identification Number in the person list.\n"
-            + "Parameters: i/ IDENTIFICATION NUMBER d/DATE l/LOG ENTRY\n"
-            + "Format of APPT DATE: dd MMM yyyy\n"
+            + "Parameters: i/NRIC d/DATE l/LOG ENTRY\n"
+            + "Format of Appointment Date: dd MMM yyyy\n"
             + "Example: " + COMMAND_WORD + " i/S1234567D d/20 Oct 2024 l/First visit to the clinic\n";
 
     public static final String MESSAGE_ADD_LOG_SUCCESS = "Added log for Person: %1$s";
     public static final String MESSAGE_PERSON_NOT_FOUND = "Person with ID %1$s not found.";
-    public static final String MESSAGE_INVALID_ID = "Invalid ID.";
+    public static final String MESSAGE_INVALID_ID = "NRIC not found in system, perhaps there was a typo.";
+
+    public static final String MESSAGE_DUPLICATE_LOG = "This log already exists in the person's log list. "
+            + "Are you sure you are adding a new log?";
 
 
     private final IdentityNumber identityNumber;
@@ -38,6 +39,8 @@ public class AddLogCommand extends Command {
      * Creates an AddLogCommand to add the specified log to the person.
      */
     public AddLogCommand(IdentityNumber identityNumber, Log log) {
+        requireNonNull(identityNumber);
+        requireNonNull(log);
         this.identityNumber = identityNumber;
         this.log = log;
     }
@@ -45,7 +48,17 @@ public class AddLogCommand extends Command {
     @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
-        List<Person> lastShownList = model.getFilteredPersonList();
+        Person personToUpdate = getPerson(model);
+        model.addLog(personToUpdate, log);
+
+        return new CommandResult(String.format(MESSAGE_ADD_LOG_SUCCESS, personToUpdate.getName()),
+                false, false, false, false, -1, false, identityNumber,
+                log.getAppointmentDate(), log.getEntry());
+    }
+
+    //@@author junyi73
+    private Person getPerson(Model model) throws CommandException {
+        List<Person> lastShownList = model.getPersonList();
         Person personToUpdate = null;
 
         // Find the person by identity number
@@ -60,26 +73,7 @@ public class AddLogCommand extends Command {
         if (personToUpdate == null) {
             throw new CommandException(String.format(MESSAGE_PERSON_NOT_FOUND, identityNumber));
         }
-
-        // Create a new Set of logs that includes the new log
-        Set<Log> updatedLogs = new HashSet<>(personToUpdate.getLogs());
-        updatedLogs.add(log);
-
-        // Create a new updated person with the additional log
-        Person updatedPerson = new Person(
-                personToUpdate.getName(),
-                personToUpdate.getIdentityNumber(),
-                personToUpdate.getPhone(),
-                personToUpdate.getEmail(),
-                personToUpdate.getAddress(),
-                personToUpdate.getTags(),
-                updatedLogs // Updated logs set
-        );
-
-        // Update the model with the new person (with the added log)
-        model.setPerson(personToUpdate, updatedPerson);
-
-        return new CommandResult(String.format(MESSAGE_ADD_LOG_SUCCESS, updatedPerson.getName()));
+        return personToUpdate;
     }
 
     @Override

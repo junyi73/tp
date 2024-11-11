@@ -2,6 +2,7 @@ package seedu.address.storage;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -9,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.model.log.AppointmentDate;
 import seedu.address.model.log.Log;
+import seedu.address.model.log.LogEntry;
 
 /**
  * Jackson-friendly version of {@link Log}.
@@ -49,20 +51,21 @@ public class JsonAdaptedLog {
             throw new IllegalValueException(String.format(MISSING_FIELD_MESSAGE_FORMAT, "entry"));
         }
 
-        if (!Log.isValidEntry(entry)) {
-            throw new IllegalValueException(Log.MESSAGE_CONSTRAINTS);
+        if (!LogEntry.isValidEntry(entry)) {
+            throw new IllegalValueException(LogEntry.MESSAGE_CONSTRAINTS);
         }
 
         // Parse the appointment date from the string
         LocalDate parsedDate;
         try {
             parsedDate = LocalDate.parse(appointmentDate, DateTimeFormatter.ofPattern("dd MMM yyyy"));
-        } catch (Exception e) {
+        } catch (DateTimeParseException e) {
             throw new IllegalValueException("Invalid date format for appointment date!");
         }
 
         AppointmentDate modelAppointmentDate = new AppointmentDate(parsedDate);
+        LogEntry logEntry = new LogEntry(entry);
 
-        return new Log(modelAppointmentDate, entry);
+        return new Log(modelAppointmentDate, logEntry);
     }
 }

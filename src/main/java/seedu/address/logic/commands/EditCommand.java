@@ -4,22 +4,20 @@ import static java.util.Objects.requireNonNull;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_IDENTITY_NUMBER;
-import static seedu.address.logic.parser.CliSyntax.PREFIX_LOG;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PHONE;
-import static seedu.address.logic.parser.CliSyntax.PREFIX_TAG;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_STATUS;
 import static seedu.address.model.Model.PREDICATE_SHOW_ALL_PERSONS;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import seedu.address.commons.core.index.Index;
 import seedu.address.commons.util.CollectionUtil;
-import seedu.address.commons.util.ToStringBuilder;
 import seedu.address.logic.Messages;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
@@ -30,7 +28,7 @@ import seedu.address.model.person.IdentityNumber;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.Phone;
-import seedu.address.model.tag.Tag;
+import seedu.address.model.person.Status;
 
 /**
  * Edits the details of an existing person in the address book.
@@ -40,7 +38,7 @@ public class EditCommand extends Command {
     public static final String COMMAND_WORD = "edit";
 
     public static final String MESSAGE_USAGE = COMMAND_WORD + ": Edits the details of the person identified "
-            + "by the index number used in the displayed person list. "
+            + "by their Index in the patient list. "
             + "Existing values will be overwritten by the input values.\n"
             + "Parameters: INDEX (must be a positive integer) "
             + "[" + PREFIX_NAME + "NAME] "
@@ -48,8 +46,7 @@ public class EditCommand extends Command {
             + "[" + PREFIX_PHONE + "PHONE] "
             + "[" + PREFIX_EMAIL + "EMAIL] "
             + "[" + PREFIX_ADDRESS + "ADDRESS] "
-            + "[" + PREFIX_TAG + "TAG]...\n"
-            + "[" + PREFIX_LOG + "APPOINTMENT DATE|ENTRY] "
+            + "[" + PREFIX_STATUS + "STATUS]...\n"
             + "Example: " + COMMAND_WORD + " 1 "
             + PREFIX_PHONE + "91234567 "
             + PREFIX_EMAIL + "johndoe@example.com";
@@ -57,6 +54,8 @@ public class EditCommand extends Command {
     public static final String MESSAGE_EDIT_PERSON_SUCCESS = "Edited Person: %1$s";
     public static final String MESSAGE_NOT_EDITED = "At least one field to edit must be provided.";
     public static final String MESSAGE_DUPLICATE_PERSON = "This person already exists in the address book.";
+
+    public static final String MESSAGE_SAME_INFO = "The person already has the same information as the one provided.";
 
     private final Index index;
     private final EditPersonDescriptor editPersonDescriptor;
@@ -89,6 +88,10 @@ public class EditCommand extends Command {
             throw new CommandException(MESSAGE_DUPLICATE_PERSON);
         }
 
+        if (personToEdit.equals(editedPerson)) {
+            throw new CommandException(MESSAGE_SAME_INFO);
+        }
+
         model.setPerson(personToEdit, editedPerson);
         model.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
         return new CommandResult(String.format(MESSAGE_EDIT_PERSON_SUCCESS, Messages.format(editedPerson)));
@@ -107,11 +110,11 @@ public class EditCommand extends Command {
         Phone updatedPhone = editPersonDescriptor.getPhone().orElse(personToEdit.getPhone());
         Email updatedEmail = editPersonDescriptor.getEmail().orElse(personToEdit.getEmail());
         Address updatedAddress = editPersonDescriptor.getAddress().orElse(personToEdit.getAddress());
-        Set<Tag> updatedTags = editPersonDescriptor.getTags().orElse(personToEdit.getTags());
-        Set<Log> updatedLogs = editPersonDescriptor.getLogs().orElse(personToEdit.getLogs());
+        Status updatedStatus = editPersonDescriptor.getStatus().orElse(personToEdit.getStatus());
+        Set<Log> defaultLogs = personToEdit.getLogs();
 
-        return new Person(updatedName, updatedIdentityNumber, updatedPhone, updatedEmail, updatedAddress, updatedTags,
-                updatedLogs);
+        return new Person(updatedName, updatedIdentityNumber, updatedPhone, updatedEmail, updatedAddress, updatedStatus,
+                defaultLogs);
     }
 
     @Override
@@ -132,10 +135,27 @@ public class EditCommand extends Command {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this)
-                .add("index", index)
-                .add("editPersonDescriptor", editPersonDescriptor)
-                .toString();
+        return "Editing person at index " + index.getOneBased() + " with details: " + editPersonDescriptor;
+    }
+
+    @Override
+    public void validateInput(Model model) throws CommandException {
+        List<Person> lastShownList = model.getFilteredPersonList();
+
+        if (index.getZeroBased() >= lastShownList.size()) {
+            throw new CommandException(Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
+        }
+
+        Person personToEdit = lastShownList.get(index.getZeroBased());
+        Person editedPerson = createEditedPerson(personToEdit, editPersonDescriptor);
+
+        if (!personToEdit.isSamePerson(editedPerson) && model.hasPerson(editedPerson)) {
+            throw new CommandException(MESSAGE_DUPLICATE_PERSON);
+        }
+
+        if (personToEdit.equals(editedPerson)) {
+            throw new CommandException(MESSAGE_SAME_INFO);
+        }
     }
 
     /**
@@ -148,8 +168,7 @@ public class EditCommand extends Command {
         private Phone phone;
         private Email email;
         private Address address;
-        private Set<Tag> tags;
-        private Set<Log> logs;
+        private Status status;
 
         public EditPersonDescriptor() {}
 
@@ -163,15 +182,14 @@ public class EditCommand extends Command {
             setPhone(toCopy.phone);
             setEmail(toCopy.email);
             setAddress(toCopy.address);
-            setTags(toCopy.tags);
-            setLogs(toCopy.logs);
+            setStatus(toCopy.status);
         }
 
         /**
          * Returns true if at least one field is edited.
          */
         public boolean isAnyFieldEdited() {
-            return CollectionUtil.isAnyNonNull(name, identityNumber, phone, email, address, tags, logs);
+            return CollectionUtil.isAnyNonNull(name, identityNumber, phone, email, address, status);
         }
 
         public void setName(Name name) {
@@ -213,41 +231,13 @@ public class EditCommand extends Command {
         public Optional<Address> getAddress() {
             return Optional.ofNullable(address);
         }
-
-        /**
-         * Sets {@code tags} to this object's {@code tags}.
-         * A defensive copy of {@code tags} is used internally.
-         */
-        public void setTags(Set<Tag> tags) {
-            this.tags = (tags != null) ? new HashSet<>(tags) : null;
+        public void setStatus(Status status) {
+            this.status = status;
         }
 
-        /**
-         * Returns an unmodifiable tag set, which throws {@code UnsupportedOperationException}
-         * if modification is attempted.
-         * Returns {@code Optional#empty()} if {@code tags} is null.
-         */
-        public Optional<Set<Tag>> getTags() {
-            return (tags != null) ? Optional.of(Collections.unmodifiableSet(tags)) : Optional.empty();
+        public Optional<Status> getStatus() {
+            return Optional.ofNullable(status);
         }
-
-        /**
-         * Sets {@code logs} to this object's {@code logs}.
-         * A defensive copy of {@code logs} is used internally.
-         */
-        public void setLogs(Set<Log> logs) {
-            this.logs = (logs != null) ? new HashSet<>(logs) : null;
-        }
-
-        /**
-         * Returns an unmodifiable log set, which throws {@code UnsupportedOperationException}
-         * if modification is attempted.
-         * Returns {@code Optional#empty()} if {@code logs} is null.
-         */
-        public Optional<Set<Log>> getLogs() {
-            return (logs != null) ? Optional.of(Collections.unmodifiableSet(logs)) : Optional.empty();
-        }
-
         @Override
         public boolean equals(Object other) {
             if (other == this) {
@@ -264,19 +254,20 @@ public class EditCommand extends Command {
                     && Objects.equals(phone, otherEditPersonDescriptor.phone)
                     && Objects.equals(email, otherEditPersonDescriptor.email)
                     && Objects.equals(address, otherEditPersonDescriptor.address)
-                    && Objects.equals(tags, otherEditPersonDescriptor.tags);
+                    && Objects.equals(status, otherEditPersonDescriptor.status);
         }
 
         @Override
         public String toString() {
-            return new ToStringBuilder(this)
-                    .add("name", name)
-                    .add("identity number", identityNumber)
-                    .add("phone", phone)
-                    .add("email", email)
-                    .add("address", address)
-                    .add("tags", tags)
-                    .toString();
+            return Stream.of(
+                            name != null ? "Name: " + name : null,
+                            identityNumber != null ? "NRIC: " + identityNumber : null,
+                            phone != null ? "Phone: " + phone : null,
+                            email != null ? "Email: " + email : null,
+                            address != null ? "Address: " + address : null,
+                            status != null ? "Status: " + status : null
+                    ).filter(Objects::nonNull)
+                    .collect(Collectors.joining(", "));
         }
     }
 }

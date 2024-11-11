@@ -9,7 +9,6 @@ import seedu.address.logic.commands.Command;
 import seedu.address.logic.commands.CommandResult;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.log.Log;
-import seedu.address.model.person.IdentityNumber;
 import seedu.address.model.person.Person;
 
 
@@ -39,6 +38,11 @@ public interface Model {
      * Returns true if there is a saved command.
      */
     boolean hasSavedCommand();
+
+    /**
+     * Returns the saved command.
+     */
+    Command getSavedCommand();
 
     /**
      * Executes the saved command.
@@ -100,28 +104,32 @@ public interface Model {
      * {@code target} must exist in the address book.
      * The person identity of {@code editedPerson} must not be the same as another existing person in the address book.
      */
-    void setPerson(Person target, Person editedPerson);
+    void setPerson(Person personToUpdate, Person editedPerson);
+
+    /**
+     * Adds the given log to the person.
+     * {@code target} must exist in the address book.
+     */
+    void addLog(Person target, Log log) throws CommandException;
+
+    /**
+     * Checks if the person has the given log.
+     * {@code target} must exist in the address book.
+     */
+    boolean hasLog(Person target, Log log);
+
+    /** Returns an unmodifiable view of the full person list */
+    ObservableList<Person> getPersonList();
 
     /** Returns an unmodifiable view of the filtered person list */
     ObservableList<Person> getFilteredPersonList();
 
     /** Returns an unmodifiable view of the filtered log list */
-    ObservableList<Log> getFilteredLogList();
+    ObservableList<Log> getSessionLog(int personIndex);
 
     /**
      * Updates the filter of the filtered person list to filter by the given {@code predicate}.
      * @throws NullPointerException if {@code predicate} is null.
      */
     void updateFilteredPersonList(Predicate<Person> predicate);
-
-    /**
-     * Updates the filter of the logs list to filter by the given {@code identityNumber}.
-     * @param identityNumber
-     */
-    void updateFilteredPersonListById(IdentityNumber identityNumber);
-
-    void updateFilteredLogListById(IdentityNumber identityNumber);
-
-    // DO NOT USE, added by ZR to prepare for future abstraction
-    void updateFilteredLogList(Predicate<Log> predicate);
 }

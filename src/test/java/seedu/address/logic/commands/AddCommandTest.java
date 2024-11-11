@@ -23,7 +23,6 @@ import seedu.address.model.Model;
 import seedu.address.model.ReadOnlyAddressBook;
 import seedu.address.model.ReadOnlyUserPrefs;
 import seedu.address.model.log.Log;
-import seedu.address.model.person.IdentityNumber;
 import seedu.address.model.person.Person;
 import seedu.address.testutil.PersonBuilder;
 
@@ -82,7 +81,7 @@ public class AddCommandTest {
     @Test
     public void toStringMethod() {
         AddCommand addCommand = new AddCommand(ALICE);
-        String expected = AddCommand.class.getCanonicalName() + "{toAdd=" + ALICE + "}";
+        String expected = "Add person: " + ALICE.getConfirmationString();
         assertEquals(expected, addCommand.toString());
     }
 
@@ -151,15 +150,25 @@ public class AddCommandTest {
         }
 
         @Override
-        public ObservableList<Person> getFilteredPersonList() {
+        public void addLog(Person target, Log log) {
+            throw new AssertionError("This method should not be called.");
+        }
+
+        @Override
+        public boolean hasLog(Person person, Log log) {
             throw new AssertionError("This method should not be called.");
         }
 
         /**
-         * Returns an unmodifiable view of the filtered log list
+         * Returns an unmodifiable view of the full person list
          */
         @Override
-        public ObservableList<Log> getFilteredLogList() {
+        public ObservableList<Person> getPersonList() {
+            throw new AssertionError("This method should not be called.");
+        }
+
+        @Override
+        public ObservableList<Person> getFilteredPersonList() {
             throw new AssertionError("This method should not be called.");
         }
 
@@ -168,23 +177,8 @@ public class AddCommandTest {
             throw new AssertionError("This method should not be called.");
         }
 
-        /**
-         * Updates the filter of the logs list to filter by the given {@code identityNumber}.
-         *
-         * @param identityNumber
-         */
         @Override
-        public void updateFilteredPersonListById(IdentityNumber identityNumber) {
-            throw new AssertionError("This method should not be called.");
-        }
-
-        @Override
-        public void updateFilteredLogList(Predicate<Log> predicate) {
-            throw new AssertionError("This method should not be called.");
-        }
-
-        @Override
-        public void updateFilteredLogListById(IdentityNumber identityNumber) {
+        public ObservableList<Log> getSessionLog(int personIndex) {
             throw new AssertionError("This method should not be called.");
         }
 
@@ -200,6 +194,11 @@ public class AddCommandTest {
 
         @Override
         public boolean hasSavedCommand() {
+            throw new AssertionError("This method should not be called.");
+        }
+
+        @Override
+        public Command getSavedCommand() {
             throw new AssertionError("This method should not be called.");
         }
 

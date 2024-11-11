@@ -6,6 +6,7 @@ import java.util.List;
 
 import javafx.collections.ObservableList;
 import seedu.address.commons.util.ToStringBuilder;
+import seedu.address.model.log.Log;
 import seedu.address.model.person.Person;
 import seedu.address.model.person.UniquePersonList;
 
@@ -93,6 +94,16 @@ public class AddressBook implements ReadOnlyAddressBook {
     public void removePerson(Person key) {
         persons.remove(key);
     }
+
+
+    //// session logging methods
+
+    public ObservableList<Log> getSessionLog(int personIndex) {
+        ObservableList<Log> unsortedLogs = persons.asUnmodifiableSessionLog(personIndex);
+        ObservableList<Log> sortedLogs = unsortedLogs.sorted((log1, log2) -> log2.compareTo(log1));
+        return sortedLogs;
+    }
+
 
     //// util methods
 

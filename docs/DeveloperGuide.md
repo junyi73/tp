@@ -33,7 +33,7 @@ Given below is a quick overview of main components and how they interact with ea
 
 **Main components of the architecture**
 
-**`Main`** (consisting of classes [`Main`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/Main.java) and [`MainApp`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/MainApp.java)) is in charge of the app launch and shut down.
+**`Main`** (consisting of classes [`Main`](https://github.com/AY2425S1-CS2103T-W13-3/tp/blob/master/src/main/java/seedu/address/Main.java) and [`MainApp`](https://github.com/AY2425S1-CS2103T-W13-3/tp/blob/master/src/main/java/seedu/address/MainApp.java)) is in charge of the app launch and shut down.
 * At app launch, it initializes the other components in the correct sequence, and connects them up with each other.
 * At shut down, it shuts down the other components and invokes cleanup methods where necessary.
 
@@ -65,13 +65,13 @@ The sections below give more details of each component.
 
 ### UI component
 
-The **API** of this component is specified in [`Ui.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/ui/Ui.java)
+The **API** of this component is specified in [`Ui.java`](https://github.com/AY2425S1-CS2103T-W13-3/tp/blob/master/src/main/java/seedu/address/ui/Ui.java)
 
 <puml src="diagrams/UiClassDiagram.puml" alt="Structure of the UI Component"/>
 
 The UI consists of a `MainWindow` that is made up of parts e.g.`CommandBox`, `ResultDisplay`, `PersonListPanel`, `StatusBarFooter` etc. All these, including the `MainWindow`, inherit from the abstract `UiPart` class which captures the commonalities between classes that represent parts of the visible GUI.
 
-The `UI` component uses the JavaFx UI framework. The layout of these UI parts are defined in matching `.fxml` files that are in the `src/main/resources/view` folder. For example, the layout of the [`MainWindow`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/ui/MainWindow.java) is specified in [`MainWindow.fxml`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/resources/view/MainWindow.fxml)
+The `UI` component uses the JavaFx UI framework. The layout of these UI parts are defined in matching `.fxml` files that are in the `src/main/resources/view` folder. For example, the layout of the [`MainWindow`](https://github.com/AY2425S1-CS2103T-W13-3/tp/blob/master/src/main/java/seedu/address/ui/MainWindow.java) is specified in [`MainWindow.fxml`](https://github.com/AY2425S1-CS2103T-W13-3/tp/blob/master/src/main/resources/view/MainWindow.fxml)
 
 The `UI` component,
 
@@ -82,15 +82,15 @@ The `UI` component,
 
 ### Logic component
 
-**API** : [`Logic.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/logic/Logic.java)
+**API** : [`Logic.java`](https://github.com/AY2425S1-CS2103T-W13-3/tp/blob/master/src/main/java/seedu/address/logic/Logic.java)
 
 Here's a (partial) class diagram of the `Logic` component:
 
 <puml src="diagrams/LogicClassDiagram.puml" width="550"/>
 
-The sequence diagram below illustrates the interactions within the `Logic` component, taking `execute("delete 1")` API call as an example.
+The sequence diagram below illustrates the interactions within the `Logic` component, taking `execute("delete i/S1234567D")` API call as an example.
 
-<puml src="diagrams/DeleteSequenceDiagram.puml" alt="Interactions Inside the Logic Component for the `delete 1` Command" />
+<puml src="diagrams/DeleteSequenceDiagram.puml" alt="Interactions Inside the Logic Component for the `delete i/S1234567D` Command" />
 
 <box type="info" seamless>
 
@@ -100,9 +100,10 @@ The sequence diagram below illustrates the interactions within the `Logic` compo
 How the `Logic` component works:
 
 1. When `Logic` is called upon to execute a command, it is passed to an `AddressBookParser` object which in turn creates a parser that matches the command (e.g., `DeleteCommandParser`) and uses it to parse the command.
-1. This results in a `Command` object (more precisely, an object of one of its subclasses e.g., `DeleteCommand`) which is executed by the `LogicManager`.
-1. The command can communicate with the `Model` when it is executed (e.g. to delete a person).<br>
-   Note that although this is shown as a single step in the diagram above (for simplicity), in the code it can take several interactions (between the command object and the `Model`) to achieve.
+1. This results in a `Command` object (more precisely, an object of one of its subclasses e.g., `DeleteCommand`, `ConfirmPrompt`) which is executed by the `LogicManager`.
+1. However, in this case, deletion is a command that requires confirmation from the user. The `Logic` component will return a `ConfirmPrompt` object that contains a message that asks the user to run the `confirm` command to confirm the deletion.
+1. The command can communicate with the `Model` when it is executed (e.g. to save the current `DeleteCommand` in `Model`).<br>
+1. Note that although this is shown as a single step in the diagram above (for simplicity), in the code it can take several interactions (between the command object and the `Model`) to achieve.
 1. The result of the command execution is encapsulated as a `CommandResult` object which is returned back from `Logic`.
 
 Here are the other classes in `Logic` (omitted from the class diagram above) that are used for parsing a user command:
@@ -114,7 +115,7 @@ How the parsing works:
 * All `XYZCommandParser` classes (e.g., `AddCommandParser`, `DeleteCommandParser`, ...) inherit from the `Parser` interface so that they can be treated similarly where possible e.g, during testing.
 
 ### Model component
-**API** : [`Model.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/model/Model.java)
+**API** : [`Model.java`](https://github.com/AY2425S1-CS2103T-W13-3/tp/blob/master/src/main/java/seedu/address/model/Model.java)
 
 <puml src="diagrams/ModelClassDiagram.puml" width="450" />
 
@@ -126,18 +127,9 @@ The `Model` component,
 * stores a `UserPref` object that represents the user’s preferences. This is exposed to the outside as a `ReadOnlyUserPref` objects.
 * does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components)
 
-<box type="info" seamless>
-
-**Note:** An alternative (arguably, a more OOP) model is given below. It has a `Tag` list in the `AddressBook`, which `Person` references. This allows `AddressBook` to only require one `Tag` object per unique tag, instead of each `Person` needing their own `Tag` objects.<br>
-
-<puml src="diagrams/BetterModelClassDiagram.puml" width="450" />
-
-</box>
-
-
 ### Storage component
 
-**API** : [`Storage.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/storage/Storage.java)
+**API** : [`Storage.java`](https://github.com/AY2425S1-CS2103T-W13-3/tp/blob/master/src/main/java/seedu/address/storage/Storage.java)
 
 <puml src="diagrams/StorageClassDiagram.puml" width="550" />
 
@@ -286,28 +278,24 @@ _{Explain here how the data archiving feature will be implemented}_
 
 Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unlikely to have) - `*`
 
-| Priority | As a …​ | I want to …​                                                   | So that I can…​                                                   |
-|----------|---------|----------------------------------------------------------------|-------------------------------------------------------------------|
-| `* * *`  | user    | add a patient contact                                          | track the details of a specific patient under my care             |
-| `* * *`  | user    | delete a patient contact                                       | get rid of patient details that are no longer under my care       |
-| `* * *`  | user    | add a session log                                              | record the session details with a specific patient                |
-| `* * *`  | user    | delete session log                                             | remove unwanted session log                                       |
-| `* * *`  | user    | store data locally                                             | keep patient data private                                         |
-| `* *`    | user    | see my next appointment’s detail (patient info, date and time) | plan my treatment procedure                                       |
-| `* *`    | user    | get a manual all the available commands (-help command)        | learn all the possible commands to fully utilize the app          |
-| `* *`    | user    | edit session log/ patient information                          | change incorrect or out of date information                       |
-| `* *`    | user    | be able to classify my patient as cleared/uncleared            | cross reference their progress                                    |
-| `* *`    | user    | group session based on patient                                 | see each session with a specific patient                          |
-| `* *`    | user    | delete all logs related to a patient                           | remove specific patient session log efficiently                   |
-| `* *`    | user    | able to export data                                            | so that I can transfer necessary data to another professional     |
-| `* *`    | user    | able to import data                                            | so that I can receive my patient’s data from another professional |
-| `* *`    | user    | log time, date of sessions                                     | to keep track of progress and frequency of patient                |
-| `*`      | user    | be able create my own macros                                   | be more productive                                                |
-| `*`      | user    | search/filter for specific patient using keyword               | quickly find relevant details of patient                          |
-| `*`      | user    | add tags to session and patients                               | filter and review related cases                                   |
-| `*`      | user    | be able to find free time                                      | slot in last minute patients                                      |
-| `*`      | user    | undo progress using command                                    | easily correct errors                                             |
-| `*`      | user    | get reminder for my next appointment                           | be reminded in case i forget                                      |
+| Priority | As a …​ | I want to …​                                            | So that I can…​                                             |
+|----------|---------|---------------------------------------------------------|-------------------------------------------------------------|
+| `* * *`  | user    | add a patient contact                                   | track the details of a specific patient under my care       |
+| `* * *`  | user    | delete a patient contact                                | get rid of patient details that are no longer under my care |
+| `* * *`  | user    | add a session log                                       | record the session details with a specific patient          |
+| `* * *`  | user    | delete session log                                      | remove unwanted session log                                 |
+| `* * *`  | user    | store data locally                                      | keep patient data private                                   |
+| `* *`    | user    | get a manual all the available commands (-help command) | learn all the possible commands to fully utilize the app    |
+| `* *`    | user    | clear the list of patients                              | start from an empty patient list                            |
+| `* *`    | user    | edit session log/ patient information                   | change incorrect or out of date information                 |
+| `* *`    | user    | confirm a command                                       | verify if I really want to do an action                     |
+| `* *`    | user    | cancel a command                                        | reverse an action that I did not intend to do               |
+| `* *`    | user    | be able to classify my patient as discharged/new        | cross reference their progress                              |
+| `* *`    | user    | group session based on patient                          | see each session with a specific patient                    |
+| `* *`    | user    | delete logs related to a patient                        | remove specific patient session log efficiently             |
+| `* *`    | user    | log time, date of sessions                              | to keep track of progress and frequency of patient          |
+| `*`      | user    | search/filter for specific patient using keyword        | quickly find relevant details of patient                    |
+
 
 ### Use cases
 
@@ -320,9 +308,10 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 1. User inputs the command to add a patient's contact details.
 2. System validates the input fields.
 3. System check to confirm patient does not exist.
-4. System adds the patient's contact details to the contact list.
-5. System displays a success message.
-6. System updates the contact list to reflect the new entry.
+4. System confirms the addition with the user.
+5. System adds the patient's contact details to the contact list.
+6. System displays a success message.
+7. System updates the contact list to reflect the new entry.
 
 Use case ends.
 
@@ -336,11 +325,17 @@ Use case ends.
         Steps 2a1-2a3 are repeated until the data entered are correct.
         Use case resumes from step 3.
 
-* 3a. Patient exists in contact details
+* 3a. Patient does not exist in contact details
 
     * 3a1. System display an error message.
 
         Use case ends.
+
+* 4a. User does not confirm addition
+
+    * 4a1. System display a message indicating that the addition was canceled.
+
+      Use case ends.
 
 **Use case: U02 Delete Patient Detail**
 
@@ -378,36 +373,7 @@ Use case ends.
 
       Use case ends.
 
-**Use case: U03 Add Patient risk**
-
-**MSS**
-
-1. User inputs the command to add a risk level to patient.
-2. System validates the input fields.
-3. System check to confirm patient exist.
-4. System adds the risk level to patient in the patient's contact.
-5. System displays a success message.
-6. System updates the contact list to reflect the new input.
-
-Use case ends.
-
-**Extensions**
-
-* 2a. The input fields are invalid
-    * 2a1. System display an error message.
-    * 2a2. System request for correct data.
-    * 2a3. User enters new data.
-
-      Steps 2a1-2a3 are repeated until the data entered are correct.
-      Use case resumes from step 3.
-
-* 3a. Patient does not exist in contact details
-
-    * 3a1. System display an error message.
-
-      Use case ends.
-
-**Use case: U04 Add Session Log**
+**Use case: U03 Add Session Log**
 
 **MSS**
 
@@ -436,6 +402,42 @@ Use case ends.
 
       Use case ends.
 
+**Use case: U04 Edit Patient Detail**
+
+**MSS**
+
+1. User inputs the command to edit a patient's contact details.
+2. System validates the input fields.
+3. System check to confirm patient exist.
+4. System confirms the edit with the user.
+5. System edits the patient's contact details in the contact list.
+6. System displays a success message.
+7. System updates the contact list to reflect the edited patient.
+
+Use case ends.
+
+**Extensions**
+
+* 2a. The input fields are invalid
+    * 2a1. System display an error message.
+    * 2a2. System request for correct data.
+    * 2a3. User enters new data.
+
+      Steps 2a1-2a3 are repeated until the data entered are correct.
+      Use case resumes from step 3.
+
+* 3a. Patient does not exist in contact details
+
+    * 3a1. System display an error message.
+
+      Use case ends.
+
+* 4a. User does not confirm edit
+
+    * 4a1. System display a message indicating that the edit was canceled.
+
+      Use case ends.
+  
 ### Non-Functional Requirements
 
 1.  Should work on any _mainstream OS_ as long as it has Java `17` or above installed.
@@ -449,6 +451,7 @@ Use case ends.
 
 ### Glossary
 
+* **NRIC**: National Registration Identity Card, a unique identifier for Singapore residents.
 * **Mainstream OS**: Windows, Linux, Unix, MacOS
 * **Private contact detail**: A contact detail that is not meant to be shared with others
 * **CLI**: Command Line Interface, allows users to interact with the application by typing commands instead of using a graphical interface.
@@ -489,7 +492,7 @@ testers are expected to do more *exploratory* testing.
    1. Prerequisites: List all persons using the `list` command. Multiple persons in the list.
 
    1. Test case: `delete 1`<br>
-      Expected: First contact is deleted from the list. Details of the deleted contact shown in the status message. Timestamp in the status bar is updated.
+      Expected: System displays a confirmation message asking if the user is sure. On confirmation, the person is deleted. 
 
    1. Test case: `delete 0`<br>
       Expected: No person is deleted. Error details shown in the status message. Status bar remains the same.

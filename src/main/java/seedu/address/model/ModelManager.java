@@ -4,19 +4,20 @@ import static java.util.Objects.requireNonNull;
 import static seedu.address.commons.util.CollectionUtil.requireAllNonNull;
 
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
 
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.commons.core.LogsCenter;
+import seedu.address.logic.commands.AddLogCommand;
 import seedu.address.logic.commands.Command;
 import seedu.address.logic.commands.CommandResult;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.log.Log;
-import seedu.address.model.person.IdentityNumber;
 import seedu.address.model.person.Person;
 
 /**
@@ -29,13 +30,8 @@ public class ModelManager implements Model {
     private final UserPrefs userPrefs;
     private final FilteredList<Person> filteredPersons;
 
-    // FilteredLogs should be final? Note that it is not initalised,
-    // may cause run time error. TODO: Improve on stability
-    private FilteredList<Log> filteredLogs;
-
     // Dangerous, find a better way to implement this.
     private Command savedCommand = null;
-
     /**
      * Initializes a ModelManager with the given addressBook and userPrefs.
      */
@@ -127,6 +123,14 @@ public class ModelManager implements Model {
     //=========== Filtered Person List Accessors =============================================================
 
     /**
+     * Returns the full list of persons in the address book.
+     */
+    @Override
+    public ObservableList<Person> getPersonList() {
+        return addressBook.getPersonList();
+    }
+
+    /**
      * Returns an unmodifiable view of the list of {@code Person} backed by the internal list of
      * {@code versionedAddressBook}
      */
@@ -135,56 +139,54 @@ public class ModelManager implements Model {
         return filteredPersons;
     }
 
-    /**
-     * Returns an unmodifiable view of the list of {@code Log} backed by the internal list of
-     * {@code versionedAddressBook}
-     */
-    @Override
-    public ObservableList<Log> getFilteredLogList() {
-        return filteredLogs;
-    }
-
     @Override
     public void updateFilteredPersonList(Predicate<Person> predicate) {
         requireNonNull(predicate);
         filteredPersons.setPredicate(predicate);
     }
+
+    //=========== Session Log ================================================================================
+
     @Override
-    public void updateFilteredLogList(Predicate<Log> predicate) {
-        requireNonNull(predicate);
-        filteredLogs.setPredicate(predicate);
+    public ObservableList<Log> getSessionLog(int personIndex) {
+        return addressBook.getSessionLog(personIndex);
     }
 
-    /**
-     * Updates the filter of the logs list to filter by the given {@code identityNumber}.
-     *
-     * @param identityNumber
-     */
     @Override
-    public void updateFilteredPersonListById(IdentityNumber identityNumber) {
-        requireNonNull(identityNumber);
-        Predicate<Person> predicate = person -> person.getIdentityNumber().equals(identityNumber);
-        updateFilteredPersonList(predicate);
+    public void addLog(Person personToUpdate, Log log) throws CommandException {
+        requireAllNonNull(personToUpdate, log);
+        // Create a new Set of logs that includes the new log
+        Set<Log> updatedLogs = new HashSet<>(personToUpdate.getLogs());
+
+        if (updatedLogs.contains(log)) {
+            throw new CommandException(AddLogCommand.MESSAGE_DUPLICATE_LOG);
+        }
+
+        updatedLogs.add(log);
+
+        // Create a new updated person with the additional log
+        Person updatedPerson = new Person(
+                personToUpdate.getName(),
+                personToUpdate.getIdentityNumber(),
+                personToUpdate.getPhone(),
+                personToUpdate.getEmail(),
+                personToUpdate.getAddress(),
+                personToUpdate.getStatus(),
+                updatedLogs // Updated logs set
+        );
+
+        // Update the model with the new person (with the added log)
+        this.setPerson(personToUpdate, updatedPerson);
     }
 
-    /**
-     * Updates logs list to show logs identified by the given {@code identityNumber}.
-     *
-     * @param identityNumber
-     */
-    public void updateFilteredLogListById(IdentityNumber identityNumber) {
-        requireNonNull(identityNumber);
-
-        // Get the person with matching identity number
-        updateFilteredPersonListById(identityNumber);
-        Person targetPerson = filteredPersons.get(0);
-
-        // Convert Set<Log> to an ObservableList<Log>
-        ObservableList<Log> loglist = FXCollections.observableArrayList(targetPerson.getLogs());
-
-        // Update the FilteredLogs to the logs of the targetPerson
-        filteredLogs = new FilteredList<>(loglist);
+    @Override
+    public boolean hasLog(Person target, Log log) {
+        requireAllNonNull(target, log);
+        return target.getLogs().contains(log);
     }
+
+    //========== Util Methods ================================================================================
+
 
     //===============Saved Commands=====================================================================================
 
@@ -198,32 +200,25 @@ public class ModelManager implements Model {
         this.savedCommand = command;
     }
 
-    /**
-     * Returns true if there is a saved command in the model.
-     */
     @Override
     public boolean hasSavedCommand() {
         return this.savedCommand != null;
     }
 
-    /**
-     * Clears the saved command in the model.
-     */
+
     @Override
     public void clearSavedCommand() {
         this.savedCommand = null;
     }
 
-    /**
-     * Executes the saved command in the model.
-     *
-     * @return The result of the command execution.
-     * @throws CommandException If saved command does not exist or error occurs during command execution.
-     */
+    @Override
+    public Command getSavedCommand() {
+        return this.savedCommand;
+    }
+
     @Override
     public CommandResult executeSavedCommand() throws CommandException {
         if (!hasSavedCommand()) {
-            clearSavedCommand();
             throw new CommandException("No command to confirm.");
         }
         CommandResult result = this.savedCommand.execute(this);

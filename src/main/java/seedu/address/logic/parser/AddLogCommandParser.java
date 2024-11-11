@@ -10,6 +10,7 @@ import seedu.address.logic.commands.AddLogCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.log.AppointmentDate;
 import seedu.address.model.log.Log;
+import seedu.address.model.log.LogEntry;
 import seedu.address.model.person.IdentityNumber;
 
 /**
@@ -30,14 +31,13 @@ public class AddLogCommandParser implements Parser<AddLogCommand> {
 
         // Check if all fields' prefix are present
         if (argMultimap.getValue(PREFIX_IDENTITY_NUMBER).isEmpty() || argMultimap.getValue(PREFIX_LOG).isEmpty()
-                || argMultimap.getValue(PREFIX_DATE).isEmpty()) {
+                || argMultimap.getValue(PREFIX_DATE).isEmpty() || !argMultimap.getPreamble().isEmpty()) {
             throw new ParseException(
                     String.format(MESSAGE_INVALID_COMMAND_FORMAT, AddLogCommand.MESSAGE_USAGE));
         }
 
-        IdentityNumber identityNumber;
-
         // Check if identity number exists
+        IdentityNumber identityNumber;
         try {
             // Parse identity number
             identityNumber = ParserUtil.parseIdentityNumber(
@@ -47,14 +47,19 @@ public class AddLogCommandParser implements Parser<AddLogCommand> {
         }
 
         // Parse date
-        String date = argMultimap.getValue(PREFIX_DATE).get();
-        AppointmentDate appointmentDate = new AppointmentDate(date);
+        AppointmentDate appointmentDate = ParserUtil.parseAppointmentDate(argMultimap.getValue(PREFIX_DATE).get());
 
         // Parse log
-        String entry = argMultimap.getValue(PREFIX_LOG).get();
+        LogEntry logEntry;
+        try {
+            String entry = argMultimap.getValue(PREFIX_LOG).get();
+            logEntry = new LogEntry(entry);
+        } catch (IllegalArgumentException e) {
+            throw new ParseException(LogEntry.MESSAGE_CONSTRAINTS);
+        }
 
         // Create log object
-        Log log = new Log(appointmentDate, entry);
+        Log log = new Log(appointmentDate, logEntry);
 
         // Create and return AddLogCommand with parsed values
         return new AddLogCommand(identityNumber, log);
